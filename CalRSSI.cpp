@@ -60,7 +60,7 @@ void CCalRSSI::process()
       buffer[4U] = (ave >> 8) & 0xFFU;
       buffer[5U] = (ave >> 0) & 0xFFU;
 
-      serial.writeRSSIData(buffer, 6U);
+      //serial.writeRSSIData(buffer, 6U);
 
       m_navg  = 0U;
       m_accum = 0U;

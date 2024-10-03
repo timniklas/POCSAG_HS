@@ -1,5 +1,6 @@
 /*
- *   Copyright (C) 2015,2016,2017,2020,2021 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2009-2017 by Jonathan Naylor G4KLX
+ *   Copyright (C) 2018 by Andy Uribe CA6JAU
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -16,35 +17,35 @@
  *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if !defined(M17TX_H)
-#define  M17TX_H
+#if !defined(POCSAGRX_H)
+#define  POCSAGRX_H
 
-#include "Config.h"
+#include "POCSAGDefines.h"
 
-#include "SerialRB.h"
+enum POCSAGRX_STATE {
+  POCSAGRXS_NONE,
+  POCSAGRXS_DATA
+};
 
-class CM17TX {
+class CPOCSAGRX {
 public:
-  CM17TX();
+  CPOCSAGRX();
 
-  uint8_t writeData(const uint8_t* data, uint8_t length);
+  void databit(bool bit);
 
-  void process();
-
-  void setTXDelay(uint8_t delay);
-
-  uint8_t getSpace() const;
+  void reset();
 
 private:
-  CSerialRB m_buffer;
-  uint8_t   m_poBuffer[1200U];
-  uint16_t  m_poLen;
-  uint16_t  m_poPtr;
-  uint16_t  m_txDelay;
-  bool      m_delay;
+  bool           m_prev;
+  POCSAGRX_STATE m_state;
+  uint32_t       m_bitBuffer;
+  uint8_t        m_buffer[200U];
+  uint16_t       m_bufferPtr;
+  uint16_t       m_lostCount;
 
-  void writeByte(uint8_t c);
+  void processNone(bool bit);
+  void processData(bool bit);
+
 };
 
 #endif
-

@@ -63,7 +63,6 @@
 
 extern uint32_t  m_frequency_rx;
 extern uint32_t  m_frequency_tx;
-extern uint32_t  m_pocsag_freq_tx;
 extern uint8_t   m_power;
 
 class CIO {
@@ -116,7 +115,7 @@ public:
   void      process(void);
   bool      hasTXOverflow(void);
   bool      hasRXOverflow(void);
-  uint8_t   setFreq(uint32_t frequency_rx, uint32_t frequency_tx, uint8_t rf_power, uint32_t pocsag_freq_tx);
+  uint8_t   setFreq(uint32_t frequency_rx, uint32_t frequency_tx, uint8_t rf_power);
   void      setPower(uint8_t power);
   void      setMode(MMDVM_STATE modemState);
   void      setDecode(bool dcd);

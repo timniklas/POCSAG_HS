@@ -30,33 +30,6 @@ public:
 
   void process();
 
-#if defined(SERIAL_REPEATER) || defined(SERIAL_REPEATER_USART1)
-  void writeSerialRpt(const uint8_t* data, uint8_t length);
-#endif
-
-  void writeDStarHeader(const uint8_t* header, uint8_t length);
-  void writeDStarData(const uint8_t* data, uint8_t length);
-  void writeDStarLost();
-  void writeDStarEOT();
-
-  void writeDMRData(bool slot, const uint8_t* data, uint8_t length);
-  void writeDMRLost(bool slot);
-
-  void writeYSFData(const uint8_t* data, uint8_t length);
-  void writeYSFLost();
-
-  void writeP25Hdr(const uint8_t* data, uint8_t length);
-  void writeP25Ldu(const uint8_t* data, uint8_t length);
-  void writeP25Lost();
-
-  void writeNXDNData(const uint8_t* data, uint8_t length);
-  void writeNXDNLost();
-
-  void writeM17LinkSetup(const uint8_t* data, uint8_t length);
-  void writeM17Stream(const uint8_t* data, uint8_t length);
-  void writeM17EOT();
-  void writeM17Lost();
-
 #if defined(SEND_RSSI_DATA)
   void writeRSSIData(const uint8_t* data, uint8_t length);
 #endif
@@ -79,15 +52,6 @@ private:
 
   bool    m_debug;
   bool    m_firstCal;
-
-  void    sendACK();
-  void    sendNAK(uint8_t err);
-  void    getStatus();
-  void    getVersion();
-  uint8_t setConfig(const uint8_t* data, uint8_t length);
-  uint8_t setMode(const uint8_t* data, uint8_t length);
-  void    setMode(MMDVM_STATE modemState);
-  uint8_t setFreq(const uint8_t* data, uint8_t length);
 
   // Hardware versions
   void    beginInt(uint8_t n, int speed);

@@ -24,7 +24,6 @@
 
 uint32_t    m_frequency_rx;
 uint32_t    m_frequency_tx;
-uint32_t    m_pocsag_freq_tx;
 uint8_t     m_power;
 
 CIO::CIO():
@@ -113,7 +112,7 @@ void CIO::process()
   if (m_started) {
     // Two seconds timeout
     if (m_watchdog >= 19200U) {
-      if (m_modemState == STATE_DSTAR || m_modemState == STATE_DMR || m_modemState == STATE_YSF || m_modemState == STATE_P25 || m_modemState == STATE_NXDN || m_modemState == STATE_M17) {
+      if (m_modemState == STATE_DMR ||m_modemState == STATE_POCSAG) {
         m_modemState = STATE_IDLE;
         setMode(m_modemState);
       }
@@ -155,39 +154,14 @@ void CIO::process()
 
   // Switch off the transmitter if needed
   if (m_txBuffer.getData() == 0U && m_tx) {
-    if(m_cwid_state) { // check for CW ID end of transmission
-      m_cwid_state = false;
-      // Restoring previous mode
-      if (m_TotalModes)
-        io.ifConf(m_modemState_prev, true);
-    }
-    if(m_pocsag_state) { // check for POCSAG end of transmission
-      m_pocsag_state = false;
-      // Restoring previous mode
-      if (m_TotalModes)
-        io.ifConf(m_modemState_prev, true);
-    }
     setRX(false);
   }
 
-  if(m_modemState_prev == STATE_DSTAR)
-    scantime = SCAN_TIME;
-  else if(m_modemState_prev == STATE_DMR)
-    scantime = SCAN_TIME * 2U;
-  else if(m_modemState_prev == STATE_YSF)
-    scantime = SCAN_TIME;
-  else if(m_modemState_prev == STATE_P25)
-    scantime = SCAN_TIME;
-  else if(m_modemState_prev == STATE_NXDN)
-    scantime = SCAN_TIME;
-  else if(m_modemState_prev == STATE_M17)
-    scantime = SCAN_TIME;
-  else
-    scantime = SCAN_TIME;
+  scantime = SCAN_TIME;
 
   if(m_modeTimerCnt >= scantime) {
     m_modeTimerCnt = 0U;
-    if( (m_modemState == STATE_IDLE) && (m_scanPauseCnt == 0U) && m_scanEnable && !m_cwid_state && !m_pocsag_state) {
+    if( (m_modemState == STATE_IDLE) && (m_scanPauseCnt == 0U) && m_scanEnable) {
       m_scanPos = (m_scanPos + 1U) % m_TotalModes;
       #if !defined(QUIET_MODE_LEDS)
       setMode(m_Modes[m_scanPos]);
@@ -200,33 +174,11 @@ void CIO::process()
     m_rxBuffer.get(bit, control);
 
     switch (m_modemState_prev) {
-      case STATE_DSTAR:
-        dstarRX.databit(bit);
-        break;
       case STATE_DMR:
-#if defined(DUPLEX)
-        if (m_duplex) {
-          if (m_tx)
-            dmrRX.databit(bit, control);
-          else
-            dmrIdleRX.databit(bit);
-        } else
-          dmrDMORX.databit(bit);
-#else
         dmrDMORX.databit(bit);
-#endif
         break;
-      case STATE_YSF:
-        ysfRX.databit(bit);
-        break;
-      case STATE_P25:
-        p25RX.databit(bit);
-        break;
-      case STATE_NXDN:
-        nxdnRX.databit(bit);
-        break;
-      case STATE_M17:
-        m17RX.databit(bit);
+      case STATE_POCSAG:
+        pocsagRX.databit(bit);
         break;
       default:
         break;
@@ -239,28 +191,13 @@ void CIO::start()
 {
   m_TotalModes = 0U;
 
-  if(m_dstarEnable) {
-    m_Modes[m_TotalModes] = STATE_DSTAR;
-    m_TotalModes++;
-  }
   if(m_dmrEnable) {
     m_Modes[m_TotalModes] = STATE_DMR;
     m_TotalModes++;
   }
-  if(m_ysfEnable) {
-    m_Modes[m_TotalModes] = STATE_YSF;
-    m_TotalModes++;
-  }
-  if(m_p25Enable) {
-    m_Modes[m_TotalModes] = STATE_P25;
-    m_TotalModes++;
-  }
-  if(m_nxdnEnable) {
-    m_Modes[m_TotalModes] = STATE_NXDN;
-    m_TotalModes++;
-  }
-  if(m_m17Enable) {
-    m_Modes[m_TotalModes] = STATE_M17;
+
+  if(m_pocsagEnable) {
+    m_Modes[m_TotalModes] = STATE_POCSAG;
     m_TotalModes++;
   }
 
@@ -359,7 +296,7 @@ uint8_t CIO::checkZUMspot(uint32_t frequency_rx, uint32_t frequency_tx) {
 }
 #endif
 
-uint8_t CIO::setFreq(uint32_t frequency_rx, uint32_t frequency_tx, uint8_t rf_power, uint32_t pocsag_freq_tx)
+uint8_t CIO::setFreq(uint32_t frequency_rx, uint32_t frequency_tx, uint8_t rf_power)
 {
   // Configure power level
   setPower(rf_power);
@@ -371,22 +308,12 @@ uint8_t CIO::setFreq(uint32_t frequency_rx, uint32_t frequency_tx, uint8_t rf_po
   ((frequency_rx >= VHF2_MIN)&&(frequency_rx < VHF2_MAX)) || ((frequency_tx >= VHF2_MIN)&&(frequency_tx < VHF2_MAX)) || \
   ((frequency_rx >= UHF2_MIN)&&(frequency_rx < UHF2_MAX)) || ((frequency_tx >= UHF2_MIN)&&(frequency_tx < UHF2_MAX)) ) )
     return 4U;
-
-  if( !( ((pocsag_freq_tx >= VHF1_MIN)&&(pocsag_freq_tx < VHF1_MAX)) || \
-  ((pocsag_freq_tx >= UHF1_MIN)&&(pocsag_freq_tx < UHF1_MAX)) || \
-  ((pocsag_freq_tx >= VHF2_MIN)&&(pocsag_freq_tx < VHF2_MAX)) || \
-  ((pocsag_freq_tx >= UHF2_MIN)&&(pocsag_freq_tx < UHF2_MAX)) ) )
-    return 4U;
 #endif
 
 #if !defined(DISABLE_FREQ_BAN)
   // Check banned frequency ranges
   if( ((frequency_rx >= BAN1_MIN)&&(frequency_rx <= BAN1_MAX)) || ((frequency_tx >= BAN1_MIN)&&(frequency_tx <= BAN1_MAX)) || \
   ((frequency_rx >= BAN2_MIN)&&(frequency_rx <= BAN2_MAX)) || ((frequency_tx >= BAN2_MIN)&&(frequency_tx <= BAN2_MAX)) )
-    return 4U;
-
-  if( ((pocsag_freq_tx >= BAN1_MIN)&&(pocsag_freq_tx <= BAN1_MAX)) || \
-  ((pocsag_freq_tx >= BAN2_MIN)&&(pocsag_freq_tx <= BAN2_MAX)) )
     return 4U;
 #endif
 
@@ -400,7 +327,6 @@ uint8_t CIO::setFreq(uint32_t frequency_rx, uint32_t frequency_tx, uint8_t rf_po
   // Configure frequency
   m_frequency_rx = frequency_rx;
   m_frequency_tx = frequency_tx;
-  m_pocsag_freq_tx = pocsag_freq_tx;
 
   return 0U;
 }
